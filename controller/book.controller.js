@@ -9,7 +9,12 @@ book_router.post("/categories", async (req, res) => {
 });
 
 book_router.get("/categories", async (req, res) => {
-  BookModel.getCategories(req, res);
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || null;
+  const offset = page * limit;
+  const search = req.query.search || "";
+
+  BookModel.getCategories({ page, limit, offset, search }, res);
 });
 
 book_router.get("/book-detail", async (req, res) => {
@@ -53,14 +58,14 @@ book_router.get("/book-content", (req, res) => {
   BookModel.getBookContent(pk_bookdetail, res);
 });
 
-book_router.get("/catepagi", (req, res) => {
-  const page = parseInt(req.query.page) || 0;
-  const limit = parseInt(req.query.limit) || null;
-  const offset = page * limit;
-  const search = req.query.search || "";
+// book_router.get("/catepagi", (req, res) => {
+// const page = parseInt(req.query.page) || 0;
+// const limit = parseInt(req.query.limit) || null;
+// const offset = page * limit;
+// const search = req.query.search || "";
 
-  BookModel.getBookPagination({ page, limit, offset,search }, res);
-});
+// BookModel.getBookPagination({ page, limit, offset, search }, res);
+// });
 
 book_router.delete("/categories", (req, res) => {
   const id = req.query.id;

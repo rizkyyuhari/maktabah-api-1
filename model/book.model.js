@@ -30,7 +30,6 @@ const addSubCategories = async (data, res) => {
     );
     res.send({ message: "Sukses menambahkan Sub Kategori Baru" });
   } catch (error) {
-    console.log(error);
     res.status(409).send({ message: "Gagal, Sub Kategori sudah ada!" });
   }
 };
@@ -76,21 +75,40 @@ const addBookDetail = async (
 };
 
 // GET CATEGORIES AND SUB CATEGORIES
-const getCategories = async (_, res) => {
+const getCategories = async ({ page, limit, offset, search }, res) => {
+  const query = `select c.pk_categoryid , c.category_name, coalesce(
+    (select array_to_json(array_agg(row_to_json(x)))
+    from (select sc.sub_category_name, sc.pk_subcategoryid
+         from tblBookCategories bc
+         join tblbooksubcategories as sc using(pk_categoryid)
+         where bc.pk_categoryid = c.pk_categoryid) x),'[]') as sub_categories
+      from tblbookcategories c
+      where category_name  ILIKE '%'|| $3||'%'
+      order by category_name 
+      limit $1
+     offset $2
+    ;`;
+  const query1 = `
+    select count(category_name)
+    from  tblbookcategories
+    where category_name ILIKE '%'|| $1 ||'%'
+  `;
+  const { rows } = await db.query(query1, [search]);
+  const totalRows = rows[0].count;
   try {
-    const results = await db.query(
-      `select c.pk_categoryid , c.category_name, coalesce(
-       (select array_to_json(array_agg(row_to_json(x)))
-       from (select sc.sub_category_name, sc.pk_subcategoryid
-            from tblBookCategories bc
-            join tblbooksubcategories as sc using(pk_categoryid)
-            where bc.pk_categoryid = c.pk_categoryid) x),'[]') as sub_categories
-       from tblbookcategories c;
-     `
-    );
-    res.send(results.rows);
-  } catch (e) {
-    res.status(404).send({ message: error });
+    const { rows } = await db.query(query, [limit, offset, search]);
+    res.send({
+      result: rows,
+      page,
+      limit,
+      totalRows,
+      totalPage: Math.ceil(totalRows / limit),
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      error,
+    });
   }
 };
 
@@ -161,38 +179,6 @@ const getBookContent = async (pk_bookdetail, res) => {
   }
 };
 
-const getBookPagination = async ({ page, limit, offset, search }, res) => {
-  const query = `
-      select * 
-      from  tblbookcategories
-      where category_name  ILIKE '%'|| $3||'%'
-      order by category_name 
-      limit $1
-      offset $2
-    `;
-  const query1 = `
-    select count(category_name)
-    from  tblbookcategories
-    where category_name ILIKE '%'|| $1 ||'%'
-  `;
-  const { rows } = await db.query(query1, [search]);
-  const totalRows = rows[0].count;
-  try {
-    const { rows } = await db.query(query, [limit, offset, search]);
-    res.send({
-      result: rows,
-      page,
-      limit,
-      totalRows,
-      totalPage: Math.ceil(totalRows / limit),
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      error,
-    });
-  }
-};
 const deleteCategories = async (id, res) => {
   const result = await db.query(
     `delete from tblbookcategories where pk_categoryid = $1`,
@@ -211,6 +197,5 @@ module.exports = {
   getBookDetail,
   addBookContent,
   getBookContent,
-  getBookPagination,
   deleteCategories,
 };
