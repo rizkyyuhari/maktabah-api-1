@@ -1,5 +1,5 @@
 const res = require("express/lib/response");
-const { Coba } = require("../dbConnection");
+
 const db = require("../dbConnection");
 const { idGenerator, capitalChange, subCategoryIdGen } = require("../utils");
 

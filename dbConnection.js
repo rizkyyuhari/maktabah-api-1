@@ -1,30 +1,12 @@
 const { Pool } = require("pg");
-const { Sequelize, DataTypes } = require("sequelize");
+require("dotenv").config();
 const pool = new Pool({
-  host: "localhost",
-  database: "maktabahDb",
-  password: "260999",
-  user: "postgres",
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  user: process.env.DB_USER,
 });
-
-const sequelize = new Sequelize("maktabahDb", "postgres", "260999", {
-  host: "localhost",
-  dialect: "postgres",
-});
-
-const Coba = sequelize.define(
-  "datas",
-  {
-    nama: { type: DataTypes.STRING },
-    age: { type: DataTypes.STRING },
-  },
-  {
-    freezeTableName: true,
-    timestamps: false,
-  }
-);
 
 module.exports = {
   query: (text, param) => pool.query(text, param),
-  Coba,
 };
