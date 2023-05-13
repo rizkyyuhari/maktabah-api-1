@@ -14,7 +14,7 @@ const addCategory = async (category_name, res) => {
     res.send({ message: "Sukses menambahkan Kategori Buku baru" });
   } catch (error) {
     res.status(409).send({
-      message: "Kategori Yang Anda Masukkan sudah ada dalam Database!",
+      message: "Gagal Menyimpan, Kategori Sudah tersimpan di Database!",
     });
   }
 };
@@ -125,6 +125,7 @@ const getCategories = async ({ page, limit, offset, search }, res) => {
 
 //GET BOOK DETAIL
 const getBookDetail = async (req, res) => {
+  console.log("berhasil");
   try {
     const result = await db.query("select * from tblbookdetail");
     res.send(result.rows);
@@ -173,7 +174,7 @@ const addBookContent = async (data, res) => {
         data.idBook,
       ])
       .then((response) => {
-        res.send({ message: "berhasil" });
+        res.send({ message: "Berhasil menambah Konten baru!" });
       })
       .catch((error) => {
         console.log(error.message);
@@ -420,8 +421,8 @@ const updateBookDetail = async (
   where pk_bookdetail  = $14`,
     [
       title,
-      subject,
       creator,
+      subject,
       description,
       publisher,
       contributor,
@@ -463,17 +464,29 @@ const addTableOfContent = async (
   { pk_bookdetail, pk_tblofcontent, text, page, sub },
   res
 ) => {
-  const result = db.query(`insert into tblofcontent values ($1,$2,$3,$4,$5)`, [
-    pk_bookdetail,
-    pk_tblofcontent,
-    text,
-    page,
-    sub,
-  ]);
-
-  res.send({
-    result,
-  });
+  try {
+    console.log("MASUK SINI PAK EKO");
+    const { rows } = await db.query(
+      "select count (page) from tblofcontent where page = $1 and pk_bookdetail = $2",
+      [page, pk_bookdetail]
+    );
+    if (rows[0].count > 0) {
+      res.status(409).send({
+        message: `Maaf! untuk halaman ${page} pada Bab dan Buku tersebut sudah dipakai di Bab lainya.`,
+      });
+    } else {
+      const result = await db.query(
+        `insert into tblofcontent values ($1,$2,$3,$4,$5)`,
+        [pk_bookdetail, pk_tblofcontent, text, page, sub]
+      );
+      res.send({
+        result,
+      });
+    }
+  } catch (error) {
+    console.log("kosong");
+    console.log(error);
+  }
 };
 
 const getTblOfcontent = async ({ page, limit, offset }, res) => {
@@ -507,7 +520,9 @@ const getTblOfcontent = async ({ page, limit, offset }, res) => {
       totalPage: Math.ceil(totalRows / limit),
     });
   } catch (error) {
-    console.log(error);
+    console.log(
+      "lorem ipsu masdlkfnajsndf assa df,masdf anflknasdlkfnalksndf lknasdlk nflkans dlkfnask ndfnsdlkf nalskdnflkansdlfk nasldkfnlaksdnflkans djl;fnasdnbfjabsd jkbfjasbd fbasldbf jasbdfjkb askjfajk"
+    );
     res.send(error);
   }
 };
@@ -521,6 +536,22 @@ const updateTblContent = async ({ pk_tblofcontent, page, text, sub }, res) => {
     [text, page, sub, pk_tblofcontent]
   );
   return res.send(result);
+};
+
+const updatePublish = async (pk_bookdetail, res) => {
+  console.log("ini suw", pk_bookdetail);
+
+  try {
+    const query =
+      "update tblbookdetail set rights = $2 where pk_bookdetail = $1 ";
+    const result = await db.query(query, [pk_bookdetail, true]);
+
+    res.send({
+      message: "berhasil",
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const deleteTblContent = async (id, res) => {
@@ -607,4 +638,5 @@ module.exports = {
   getTblOfcontent,
   updateTblContent,
   deleteTblContent,
+  updatePublish,
 };
